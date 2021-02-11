@@ -1,30 +1,32 @@
 // import require library
 const request = require("request");
 
-// accept one cli argument
-const breedToSearch = process.argv.slice(2, 3).join("");
-
-// search the database
-request(
-  `https://api.thecatapi.com/v1/breeds/search?q=${breedToSearch}`,
-  (error, response, body) => {
-    // error if HTTP status code is not 200
-    if (response && response.statusCode !== 200) {
-      console.log(`ERROR ${response.statusCode}\nYour request failed.`);
-      process.exit(1);
+const fetchBreedDescription = (breedName, callback) => {
+  // search the database
+  request(
+    `https://api.thecatapi.com/v1/breeds/search?q=${breedName}`,
+    (error, response, body) => {
+      // error if HTTP status code is not 200
+      if (response && response.statusCode !== 200) {
+        callback(
+          Error(
+            `HTTP Status Code ${response.statusCode}: Your request failed.`
+          ),
+          null
+        );
+        // error if error
+      } else if (error) {
+        callback(Error(error), null);
+        // error if invalid search query
+      } else if (!JSON.parse(body)[0]) {
+        callback(Error(`Breed not found or invalid search query`), null);
+      } else {
+        // else print first result description
+        const result = JSON.parse(body)[0].description;
+        callback(null, result);
+      }
     }
+  );
+};
 
-    // error if error
-    if (error) throw error;
-
-    // error if invalid search query
-    if (!JSON.parse(body)[0]) {
-      console.log(`Breed not found or invalid search query`);
-      process.exit(2);
-    }
-
-    // else print first result description
-    const result = JSON.parse(body);
-    console.log(result[0].description);
-  }
-);
+module.exports = { fetchBreedDescription };
